@@ -1,18 +1,36 @@
 const express = require('express');
 const data = require('./data/geo.json');
+const weather = require('./data/darksky.json');
 const app = express();
 // const request = require('superagent');
 
+app.get('/', (reg, res) => { res.send('Hey there');});
 
-app.get('/location', (request, respond) => {
+app.get('/location', (req, res) => {
     const cityData = data.results[0];
 
-    respond.json({
-        name: request.querey.name,
+    res.json({
+        name: req.querey.name,
         formatted_query: cityData.formatted_address,
         latitude: cityData.geometry.location.lat,
         longitude: cityData.geometry.location.lng,
     });
+});
+
+const getWeatherData = (lat, lng) => {
+    return weather.daily.data.map(forecast => {
+        return {
+            forecast: forecast.summary,
+            time: new Date(forecast.time),
+        };
+    })
+};
+
+app.get('/weather', (req, res) => {
+    // use the lat and long from earlier to get weather data
+    const portlandWeather = getWeatherData(lat, lng);
+
+    res.json(portlandWeather);
 });
 
 app.get('*', (reg, res) => { res.json({ ohNo: '404', });});
@@ -53,3 +71,5 @@ module.exports = {
 // once you type in portland, then it needs to find that lat and long
 // compare the search querey with the hard coded data
 // cityData.geometry.location.lng
+
+// use moment instead of date
