@@ -3,32 +3,40 @@ const data = require('./data/geo.js');
 const weather = require('./data/darksky.js');
 const app = express();
 const cors = require('cors');
-// const request = require('superagent');
+const request = require('superagent');
 
 // cors is something that every app needs 
+// cors is a good example of middleware / it's an opportunity to add things to the request object
 app.get(cors());
-app.get('/', (reg, res) => { res.send('Hey there');});
+app.get('/', (req, res) => { res.send('Hey there');});
 
 // state
 let lat;
 let lng;
 
-app.get('/location', (req, res) => {
-    const location = req.query.search;
+app.get('/location', async(req, res, next) => {
+    try {
+
+        const location = req.query.search;
     // will use location with the api
-    console.log(data);
-    console.log('using location', location);
-    const cityData = data.results[0];
+    // TODO: HIDE KEY
+    const URL = // local api + key + portland to ${location}
+
+        const cityData = data.results[0];
+        const locationData = await request.get(URL);
 
     // where the state changes over time 
-    lat = cityData.geometry.location.lat;
-    lng = cityData.geometry.location.lng;
+        lat = cityData.geometry.location.lat;
+        lng = cityData.geometry.location.lng;
 
-    res.json({
-        formatted_query: cityData.formatted_address,
-        latitude: cityData.geometry.location.lat,
-        longitude: cityData.geometry.location.lng,
-    });
+        res.json({
+            formatted_query: cityData.formatted_address,
+            latitude: cityData.geometry.location.lat,
+            longitude: cityData.geometry.location.lng,
+        });
+    } catch (err) {
+        next(err);
+    }
 });
 
 const getWeatherData = (lat, lng) => {
