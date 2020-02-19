@@ -1,16 +1,30 @@
 const express = require('express');
-const data = require('./data/geo.json');
-const weather = require('./data/darksky.json');
+const data = require('./data/geo.js');
+const weather = require('./data/darksky.js');
 const app = express();
+const cors = require('cors');
 // const request = require('superagent');
 
+// cors is something that every app needs 
+app.get(cors());
 app.get('/', (reg, res) => { res.send('Hey there');});
 
+// state
+let lat;
+let lng;
+
 app.get('/location', (req, res) => {
+    const location = req.query.search;
+    // will use location with the api
+    console.log(data);
+    console.log('using location', location);
     const cityData = data.results[0];
 
+    // where the state changes over time 
+    lat = cityData.geometry.location.lat;
+    lng = cityData.geometry.location.lng;
+
     res.json({
-        name: req.querey.name,
         formatted_query: cityData.formatted_address,
         latitude: cityData.geometry.location.lat,
         longitude: cityData.geometry.location.lng,
@@ -21,9 +35,9 @@ const getWeatherData = (lat, lng) => {
     return weather.daily.data.map(forecast => {
         return {
             forecast: forecast.summary,
-            time: new Date(forecast.time),
+            time: new Date(forecast.time * 1000),
         };
-    })
+    });
 };
 
 app.get('/weather', (req, res) => {
