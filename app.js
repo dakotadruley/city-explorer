@@ -1,9 +1,7 @@
 const express = require('express');
 const data = require('./data/geo.json');
 const app = express();
-const request = require('superagent');
-
-// add the location params
+// const request = require('superagent');
 
 
 app.get('/location', (request, respond) => {
@@ -17,15 +15,15 @@ app.get('/location', (request, respond) => {
     });
 });
 
-app.get('*', (reg, res) => {
-    res.json({
-        ohNo: '404',
-    });
-});
+app.get('*', (reg, res) => { res.json({ ohNo: '404', });});
 
+module.exports = {
+    app: app,
+};
 // needs to move out so that it won't break all tests
-app.listen(3000, () => { console.log
-('running.....')});
+// app.listen(3000, () => { console.log
+// ('running.....')});
+
 
 // go to trello for the lab instructions. only 6. 
 
