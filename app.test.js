@@ -28,7 +28,7 @@ describe('/weather', () => {
             const response = await request(app)
                 .get('/weather');
             
-            expect(response.body).toEqual({
+            expect(response.body[0]).toEqual({
                 forecast: expect.any(String),
                 time: expect.any(String),
             });
