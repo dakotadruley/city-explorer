@@ -86,6 +86,64 @@ app.get('/yelp', async(req, res, next) => {
     }
 });
 
+app.get('/events', async(req, res, next) => {
+    try { // use the lat and long from earlier to get event data
+
+        const URL = (`http://api.eventful.com/json/events/search?app_key=${process.env.EVENTFUL_API_KEY}&where=${lat},${lon}&within=25&page_size=20&page_number=1`);
+        const data = await request.get(URL);
+        //where's the body...?
+        //console.log(data) 
+        //JSON.parse(data.text) instead of data.body
+        const eventfulStuff = JSON.parse(data.text);
+
+        const events = eventfulStuff.events.event.map(event => {
+            return {
+                link: event.url,
+                name: event.title,
+                // play around with the date to get better format
+                event_date: event.start_time,
+                summary: event.description === null ? 'N/A' : event.description,
+            };
+        });   
+
+        res.json(events);
+
+    } catch (err) {
+        next(err);
+    }
+});
+
+app.get('/trails', async(req, res, next) => {
+    try {
+
+        const URL = (`https://www.hikingproject.com/data/get-trails?lat=${lat}&lon=${lon}&maxDistance=10&key=${process.env.TRAILS_API_KEY}`);
+
+        const trailData = await request.get(URL);
+        
+        const trailStuff = trailData.body.trails.map(trails => {
+            return {
+                name: trails.name,
+                location: trails.location,
+                length: trails['length'],
+                stars: trails.stars,
+                star_votes: trails.starVotes,
+                summary: trails.summary,
+                trail_url: trails.url,
+                conditions: trails.conditionStatus,
+                condition_date_time: trails.conditionDate,
+            };
+        });
+
+        res.json({ trailStuff });
+
+    } catch (err) {
+        next(err);
+    }
+});
+
+
+
+
 app.get('*', (reg, res) => { res.json({ ohNo: '404', });});
 
 module.exports = {
