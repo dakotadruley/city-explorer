@@ -1,18 +1,17 @@
+require('dotenv').config();
 const express = require('express');
-const data = require('./data/geo.js');
-const weather = require('./data/darksky.js');
 const app = express();
 const cors = require('cors');
 const request = require('superagent');
 
 // cors is something that every app needs 
 // cors is a good example of middleware / it's an opportunity to add things to the request object
-app.get(cors());
+app.use(cors());
 app.get('/', (req, res) => { res.send('Hey there');});
 
 // state
 let lat;
-let lng;
+let lon;
 
 app.get('/location', async(req, res, next) => {
     try {
@@ -20,27 +19,28 @@ app.get('/location', async(req, res, next) => {
         const location = req.query.search;
     // will use location with the api
     // TODO: HIDE KEY
-    const URL = // local api + key + portland to ${location}
+        const URL = `https://us1.locationiq.com/v1/search.php?key=${process.env.GEOCODE_API_KEY}&q=${location}&format=json`;
 
-        const cityData = data.results[0];
-        const locationData = await request.get(URL);
-
+        const cityData = await request.get(URL);
+        const firstResult = cityData.body[0];
     // where the state changes over time 
-        lat = cityData.geometry.location.lat;
-        lng = cityData.geometry.location.lng;
+        lat = firstResult.lat;
+        lon = firstResult.lon;
 
         res.json({
-            formatted_query: cityData.formatted_address,
-            latitude: cityData.geometry.location.lat,
-            longitude: cityData.geometry.location.lng,
+            formatted_query: firstResult.display_name,
+            latitude: lat,
+            longitude: lon,
         });
     } catch (err) {
         next(err);
     }
 });
 
-const getWeatherData = (lat, lng) => {
-    return weather.daily.data.map(forecast => {
+const getWeatherData = async(lat, lon) => {
+    const weather = await request.get(`https://api.darksky.net/forecast/${process.env.DARKSKY_API_KEY}/${lat},${lon}`);
+    
+    return weather.body.daily.data.map(forecast => {
         return {
             forecast: forecast.summary,
             time: new Date(forecast.time * 1000),
@@ -48,11 +48,42 @@ const getWeatherData = (lat, lng) => {
     });
 };
 
-app.get('/weather', (req, res) => {
-    // use the lat and long from earlier to get weather data
-    const portlandWeather = getWeatherData(lat, lng);
+// latitude = 45.5234211;
+// longitude = -122.6809008;
 
-    res.json(portlandWeather);
+app.get('/weather', async(req, res, next) => {
+    try { // use the lat and long from earlier to get weather data
+
+        const skyWeather = await getWeatherData(lat, lon);
+
+        res.json(skyWeather);
+
+    } catch (err) {
+        next(err);
+    }
+});
+
+app.get('/yelp', async(req, res, next) => {
+    try {
+        const yelpStuff = await request
+            .get(`https://api.yelp.com/v3/businesses/search?term=restaurants&latitude=${lat}&longitude=${lon}`)
+            .set('Authorization', `Bearer ${process.env.YELP_API_KEY}`);
+
+        const restaurant = yelpStuff.body.businesses.map(business => {
+            return {
+                name: business.name,
+                image_url: business.image_url,
+                price: business.price,
+                rating: business.rating,
+                url: business.url,
+            };
+        });   
+
+        res.json(restaurant);
+
+    } catch (err) {
+        next(err);
+    }
 });
 
 app.get('*', (reg, res) => { res.json({ ohNo: '404', });});
